@@ -1,6 +1,13 @@
  
 #!/bin/bash
 
+
+if [ ! -f "${1}" ]
+then
+    echo "Usage: $(basename ${0}) <file>"
+    exit 1
+fi
+
 EXT=${1##*.}
 echo $EXT
 ZIP="${1%${EXT}}zip"
