@@ -34,7 +34,7 @@ done
 ## info
 echo
 echo "Original: "
-cat ${1}
+# cat ${1}
 
 
 ####################
@@ -54,7 +54,7 @@ do
     JSON=$(curl -s https://www.googleapis.com/urlshortener/v1/url -H "Content-Type: application/json" -d "${POST}" | grep -Po '"id":.*?[^\\]",' )
     echo "JSON  : ${JSON}"
     
-    SHORT=$(echo "${JSON}" | grep -Po '(?<=http://goo.gl/)[\w]+')
+    SHORT=$(echo "${JSON}" | grep -Po '(?<=http://goo.gl/)[^\"]+')
     echo "SHORT : ${SHORT}"
     
     echo ${SHORT} >> "${ZIP}"
@@ -72,7 +72,7 @@ do
     JSON=$(curl -s "https://www.googleapis.com/urlshortener/v1/url?shortUrl=http://goo.gl/${i}"| grep -Po '"longUrl":.*?[^\\]",')
     echo "JSON  : ${JSON}"
     
-    LONG=$(echo "${JSON}" | grep -Po '(?<=http://www.google.com/)[\w]+')
+    LONG=$(echo "${JSON}" | grep -Po '(?<=http://www.google.com/)[^\"]+')
     echo "LONG  : ${LONG}"
     
     echo ${LONG} >> "${B64}"
@@ -85,8 +85,8 @@ base64 -d "${B64}" > "${ORIG}"
 ## info
 echo
 echo "Extracted: "
-cat "${ORIG}"
+# cat "${ORIG}"
 echo
-diff "$1" "${ORIG}"
+diff -s "$1" "${ORIG}"
 
 
