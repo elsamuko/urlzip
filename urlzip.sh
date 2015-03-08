@@ -40,6 +40,7 @@ echo "Original: "
 ####################
 ## compress 
 echo
+echo
 echo "ENCODE"
 
 for i in `base64 -w 1000 ${1}`;
@@ -58,12 +59,16 @@ do
     echo "SHORT : ${SHORT}"
     
     echo ${SHORT} >> "${ZIP}"
-    
+    echo
+
+    # google quota
+    sleep 120
 done
 
 
 ####################
 ## extract
+echo
 echo
 echo "DECODE"
 
@@ -76,6 +81,10 @@ do
     echo "LONG  : ${LONG}"
     
     echo ${LONG} >> "${B64}"
+    echo
+
+    # google quota
+    sleep 120
 done
 
 base64 -d "${B64}" > "${ORIG}"
@@ -83,6 +92,7 @@ base64 -d "${B64}" > "${ORIG}"
 
 ####################
 ## info
+echo
 echo
 echo "Extracted: "
 # cat "${ORIG}"
