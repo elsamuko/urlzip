@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# check for GNU base64 with wrap option
+base64 --help 2>&1 | grep GNU > /dev/null || { echo "Error: Could not find GNU grep"; exit 1; }
 
 if [ ! -f "$1" ]
 then
