@@ -9,95 +9,74 @@ then
     exit 1
 fi
 
-EXT=${1##*.}
-echo "$EXT"
-ZIP="${1%$EXT}zip"
-echo "$ZIP"
-B64="${1%$EXT}b64"
-echo "$B64"
-ORIG="${1%$EXT}orig.$EXT"
-echo "$ORIG"
+WDIR="/tmp/urlzip"
+ORIG="$1"
+EXT=${ORIG##*.}
+ZIP="$WDIR/${ORIG%$EXT}zip"
+B64="$WDIR/${ORIG%$EXT}b64"
+BACKUP="$WDIR/${ORIG%$EXT}copy.$EXT"
 
+echo "ORIG   : [$ORIG]"
+echo "EXT    : [$EXT]"
+echo "ZIP    : [$ZIP]"
+echo "B64    : [$B64]"
+echo "BACKUP : [$BACKUP]"
 
-####################
-## tidy up old run
-for j in "$ZIP" "$B64" "$ORIG"
-do
-    if [ -f "$j" ]
-    then
-        echo "removing old $j"
-        rm "$j"
+function doPrepare {
+    if [ -d "$WDIR" ]; then
+        rm -rf "$WDIR"
     fi
-done
+    mkdir -p "$WDIR"
+}
 
-
-####################
-## info
-echo
-echo "Original: "
-# cat "$1"
-
-
-####################
-## compress 
-echo
-echo
-echo "ENCODE"
-
-for i in $(base64 -w 1000 "$1");
-do
-
-    URL="http://www.google.com/$i"
-    echo "URL   : $URL"
-
-    POST="{\"longUrl\": \"$URL\"}"
-    echo "POST  : $POST"
-
-    JSON=$(curl -s "https://www.googleapis.com/urlshortener/v1/url" -H "Content-Type: application/json" -d "$POST" | grep -Po '"id":.*?[^\\]",' )
-    echo "JSON  : $JSON"
-
-    SHORT=$(echo "$JSON" | grep -Po '(?<=http://goo.gl/)[^\"]+')
-    echo "SHORT : $SHORT"
-
-    echo "$SHORT" >> "$ZIP"
+function doCompress {
     echo
-
-    # google quota
-    sleep 120
-done
-
-
-####################
-## extract
-echo
-echo
-echo "DECODE"
-
-while read LINE
-do
-    JSON=$(curl -s "https://www.googleapis.com/urlshortener/v1/url?shortUrl=http://goo.gl/$LINE"| grep -Po '"longUrl":.*?[^\\]",')
-    echo "JSON  : $JSON"
-
-    LONG=$(echo "$JSON" | grep -Po '(?<=http://www.google.com/)[^\"]+')
-    echo "LONG  : $LONG"
-
-    echo "$LONG" >> "$B64"
     echo
+    echo "COMPRESS"
 
-    # google quota
-    sleep 120
-done < "$ZIP"
+    for LINE in $(base64 -w 1000 "$ORIG")
+    do
+        TINY=$(curl -s "http://tinyurl.com/api-create.php?url=$LINE" | grep -Po "(?<=http://tinyurl.com/).*" )
+        echo "TINY   : [$TINY]"
 
-base64 -d "$B64" > "$ORIG"
+        echo "$TINY" >> "$ZIP"
 
-
-####################
-## info
-echo
-echo
-echo "Extracted: "
-# cat "$ORIG"
-echo
-diff -s "$1" "$ORIG"
+        # workaround for quotas
+        sleep 5
+    done
+}
 
 
+function doExtract {
+    echo
+    echo
+    echo "EXTRACT"
+
+    while read LINE
+    do
+        DATA=$(curl -sI "http://tinyurl.com/$LINE" | grep -Po "(?<=Location: )[\w=]*" )
+        echo "DATA   : [$DATA]"
+
+        echo -n "$DATA" >> "$B64"
+
+        # workaround for quotas
+        sleep 5
+    done < "$ZIP"
+
+    base64 -d "$B64" > "$BACKUP"
+}
+
+
+function showInfo {
+    echo
+    echo
+    echo "DIFF"
+
+    diff -s "$ORIG" "$BACKUP"
+}
+
+
+doPrepare
+doCompress
+doExtract
+showInfo
